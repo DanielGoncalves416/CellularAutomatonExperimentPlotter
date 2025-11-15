@@ -297,6 +297,7 @@ def process_experimental_data_file(filename):
     data_vector = []
 
     try:
+        count = 40
         with open(filename) as file:
             for _ in range(3):
                 file.readline()  # ignore the lines that don't contain simulation data on the beginning of the file.
@@ -315,7 +316,11 @@ def process_experimental_data_file(filename):
 
                 current_line_data = list(map(int,line.strip("\n ").split(" ")))
 
-                data_vector.append(np.mean(current_line_data))
+                if count < 30: # serve para ignorar as trinta primeiras entradas.
+                    data_vector.append(None)
+                    count += 1
+                else:
+                    data_vector.append(np.mean(current_line_data))
     except FileNotFoundError:
         sys.stderr.write(f"File {filename} not found.\n")
         raise NoticeError
@@ -324,6 +329,39 @@ def process_experimental_data_file(filename):
         raise NoticeError
 
     return data_vector
+
+def process_column_config_file(filename):
+    categories = []
+    values = []
+    ticks = []
+
+    directory = "/".join(filename.split("/")[:-1])  # extract the directory of the configuration file
+
+    try:
+        with open(filename) as file:
+            lines = file.readlines()
+
+            ticks_line = lines[0].strip("\n")
+            if ticks_line != "":
+                ticks = [float(x) for x in ticks_line.split(" ")]
+
+            for line in lines[1:]:
+                try:
+                    data_file, legend = line.strip("\n ").split(" ")
+                except ValueError:
+                    legend = None
+                    data_file = line.strip("\n ")
+
+                categories.append(legend)
+                values.append(process_experimental_data_file(f"{directory}/{data_file}")[0])
+    except FileNotFoundError:
+        sys.stderr.write(f"File {filename} not found.\n")
+        exit()
+    except NoticeError:
+        exit()
+
+    return categories, values, ticks
+
 
 def varas_door_width_fig_7(legends, data_vector):
     """

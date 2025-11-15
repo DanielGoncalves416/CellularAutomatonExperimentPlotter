@@ -18,7 +18,7 @@ def creating_arg_parser():
     # add_argument adds new arguments or options that can be inserted by command line.
     parser.add_argument('-i', required=True, nargs=1, help="Filename that contains the data from which the graphic will be generated.")
     possible_graphics = ["environment_heatmap", "3d_environment_heatmap", "heatmap", "int_contours", "float_contours", "line_graphic",
-                         "scatter_graphic", "varas_door_width_7", "varas_door_width_9"]
+                         "scatter_graphic", "column_graphic", "varas_door_width_7", "varas_door_width_9"]
     parser.add_argument('-g','--graphic', choices=possible_graphics, required=True, nargs=1, help="Specifies which graphic should be generated.")
     parser.add_argument('-o','--out', nargs="?", default="", help="Filename on which the graphic should be saved.")
     parser.add_argument('-t','--title', nargs=1, help="The title of the generated graphic.")
@@ -29,7 +29,9 @@ def creating_arg_parser():
     parser.add_argument('--force-over-values', action='store_true', help="Force values exceeding the maximum determined value to be colored dark red. Without this, some graphics may display a mix of colors where only dark red should appear.")
     parser.add_argument('--only-save-fig', action='store_true', help="Doesn't show the generated graphic.")
     parser.add_argument('--wall-threshold', nargs=1, default=[1000.0], help="Threshold value above (or bellow, if negative) which a cell is considered a wall or obstacle. The threshold value itself is also treated as a wall.")
-    parser.add_argument('--no-marker', action='store_true', help="Data points are no marked in a line graphic.")
+    parser.add_argument('--no-marker', action='store_true', help="Data points aren't marked in a line graphic.")
+    parser.add_argument("--no-legends", action='store_true', help="Legends aren't show in a line graphic.")
+    parser.add_argument("--log-scale", action='store_true', help="Scale line graphics in log.")
 
     return parser
 
@@ -51,10 +53,13 @@ def generate_graphic():
         plotting.plot_contours_graphic(data_matrix, min_max_values, output_file, labels, "float")
     elif choice == "line_graphic":
         x_axis_ticks, y_axis_ticks, legends, data_vector = processing.process_configuration_file(input_file)
-        plotting.plot_line_graphic(x_axis_ticks, y_axis_ticks, legends, data_vector, output_file, labels, False, no_marker)
+        plotting.plot_line_graphic(x_axis_ticks, y_axis_ticks, legends, data_vector, output_file, labels, False, no_marker) #, no_legends, log_scale)
     elif choice == "scatter_graphic":
         x_axis_ticks, y_axis_ticks, legends, data_vector = processing.process_configuration_file(input_file)
         plotting.plot_scatter_graphic(x_axis_ticks, y_axis_ticks, legends, data_vector, output_file, labels)
+    elif choice == "column_graphic":
+        categories, values, y_ticks = processing.process_column_config_file(input_file)
+        plotting.plot_column_graphic(categories, values, y_ticks, output_file, labels)
     elif choice == "varas_door_width_7":
         x_axis_ticks, y_axis_ticks, legends, data_vector = processing.process_configuration_file(input_file)
         processed_legends, difference_data_vector = processing.varas_door_width_fig_7(legends, data_vector)
@@ -82,6 +87,8 @@ if __name__ == "__main__":
     force_over_values = command_line.force_over_values
     suppress_heatmap_exits = command_line.suppress_heatmap_exits
     no_marker = command_line.no_marker
+    no_legends = command_line.no_legends
+    log_scale = command_line.log_scale
 
     wall_threshold = float(command_line.wall_threshold[0])
     
